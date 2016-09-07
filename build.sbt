@@ -1,0 +1,15 @@
+name := "extractor"
+
+version := "0.1"
+
+scalaVersion := "2.11.8"
+
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.9"
+
+libraryDependencies += "io.argonaut" %% "argonaut" % "6.1"
+
+libraryDependencies += "org.apache.httpcomponents" % "fluent-hc" % "4.5.2"
+
+libraryDependencies += "com.google.guava" % "guava" % "19.0"
+
+libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
