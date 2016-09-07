@@ -1,19 +1,18 @@
 package ren.nicholas.model
 
-import argonaut.Argonaut._
-import argonaut.CodecJson
+import org.json4s.DefaultFormats
 
 case class Announcement(id: Option[String],
                         secCode: String,
                         secName: String,
                         orgId: String,
-                        announcementId: Long,
+                        announcementId: String,
                         announcementTitle: String,
-                        announcementTime: Long,
+                        announcementTime: String,
                         adjunctUrl: String,
                         adjunctSize: Int,
                         adjunctType: String,
-                        storageTime: Long,
+                        storageTime: String,
                         columnId: String,
                         pageColumn: String,
                         announcementType: String,
@@ -21,30 +20,15 @@ case class Announcement(id: Option[String],
                         important: Option[String],
                         batchNum: Option[String],
                         announcementContent: Option[String],
-                        announcementTypeName: Option[String])
+                        announcementTypeName: Option[String]) {
+
+  val titlePattern = ".*(\\d{4}).*".r
+
+  def yearOfPublished: String = titlePattern.findFirstMatchIn(announcementTitle).get.group(1)
+
+}
 
 
 object Announcement {
-  implicit def AnnouncementCodecJson: CodecJson[Announcement] =
-    casecodec19(Announcement.apply, Announcement.unapply)(
-      "id",
-      "secCode",
-      "secName",
-      "orgId",
-      "announcementId",
-      "announcementTitle",
-      "announcementTime",
-      "adjunctUrl",
-      "adjunctSize",
-      "adjunctType",
-      "storageTime",
-      "columnId",
-      "pageColumn",
-      "announcementType",
-      "associateAnnouncement",
-      "important",
-      "batchNum",
-      "announcementContent",
-      "announcementTypeName"
-    )
+  implicit val formats = DefaultFormats
 }

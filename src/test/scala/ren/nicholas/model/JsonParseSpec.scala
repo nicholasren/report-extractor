@@ -1,16 +1,20 @@
 package ren.nicholas.model
 
-import argonaut.Argonaut._
+import org.json4s._
+import org.json4s.native.JsonMethods._
 import org.scalatest.{Matchers, WordSpecLike}
 import ren.nicholas.support.Files._
 
-import scalaz.\/
-
 class JsonParseSpec extends WordSpecLike with Matchers {
+  implicit val formats = DefaultFormats
 
   "Announcement" must {
     "be decoded from json" in {
-      val announcement: Option[Announcement] = asString("announcement.json").decodeOption[Announcement]
+      val string: JsonInput = asString("announcement.json")
+
+      val announcement = parse(string).extract[Announcement]
+      println(announcement)
+
       announcement should !==(None)
     }
   }
@@ -18,10 +22,12 @@ class JsonParseSpec extends WordSpecLike with Matchers {
   "SearchResponse" must {
     "be decoded from json" in {
       val string: String = asString("response.json")
-      val searchResponse: \/[String, SearchResponse] = string.decodeEither[SearchResponse]
 
-      println(searchResponse)
-      searchResponse should !==(None)
+
+      val response: SearchResponse = parse(string).extract[SearchResponse]
+      println(response)
+
+      response should !==(None)
     }
   }
 }

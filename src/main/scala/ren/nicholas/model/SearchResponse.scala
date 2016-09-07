@@ -2,6 +2,7 @@ package ren.nicholas.model
 
 import argonaut.Argonaut._
 import argonaut._
+import org.json4s.DefaultFormats
 
 case class SearchResponse(classifiedAnnouncements: Option[String],
                           totalSecurities: Int,
@@ -13,14 +14,5 @@ case class SearchResponse(classifiedAnnouncements: Option[String],
                          ) {}
 
 object SearchResponse {
-  implicit def SearchResponseCodecJson: CodecJson[SearchResponse] =
-    casecodec7(SearchResponse.apply, SearchResponse.unapply)("classifiedAnnouncements",
-      "totalSecurities",
-      "totalAnnouncement",
-      "totalRecordNum",
-      "announcements",
-      "categoryList",
-      "hasMore"
-    )
-
+  implicit val formats = DefaultFormats
 }

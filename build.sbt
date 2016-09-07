@@ -13,3 +13,9 @@ libraryDependencies += "org.apache.httpcomponents" % "fluent-hc" % "4.5.2"
 libraryDependencies += "com.google.guava" % "guava" % "19.0"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+
+libraryDependencies += "org.json4s" %% "json4s-native" % "3.4.0"
+
+
+
+
