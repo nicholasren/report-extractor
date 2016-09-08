@@ -9,14 +9,29 @@ class InputLoader extends Actor with ActorLogging {
   val inputFileName: String = "trd_co.csv"
 
   override def receive: Receive = {
-    case Start =>
-      val lines: Iterator[String] = Source.fromFile(Resources.getResource(inputFileName).toURI).getLines().drop(1)
-      val stockNumbers: Iterator[String] = lines.map(_.split(",")(1))
+    case Start => {
+      val lines: List[String] = Source.fromFile(Resources.getResource(inputFileName).toURI).getLines().drop(1).toList
+      val stockNumbers: List[String] = lines.map(_.split(",")(1)).sorted
+
       stockNumbers.foreach {
         stockNumber => {
-          log.debug(s"finding annual announcement for $stockNumber")
           context.actorOf(Props[AnnouncementFinder]) ! Find(stockNumber)
         }
       }
+
+      context.become(ack(stockNumbers))
+    }
+  }
+
+  def ack(stockNumbers: List[String]): Receive = {
+    case FindCompleted(stockNumber) => {
+      val remains: List[String] = stockNumbers.filterNot(_ == stockNumber)
+      if (remains.isEmpty) {
+        log.debug("[===============All Completed!!!===============]")
+        context.system.terminate();
+      } else {
+        context.become(ack(remains))
+      }
+    }
   }
 }

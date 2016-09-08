@@ -10,6 +10,7 @@ object Server extends App {
 
   val system = ActorSystem("extractor")
 
-  val loader: ActorRef = system.actorOf(Props[InputLoader])
+  val loader: ActorRef = system.actorOf(Props[InputLoader], "input-loader")
+
   loader ! Start
 }
