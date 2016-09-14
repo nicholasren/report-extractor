@@ -15,18 +15,17 @@ class Downloader extends Actor with ActorLogging {
   override def receive: Receive = {
     case Download(stockNumber, announcement) => {
       val filename = s"$stockNumber-${announcement.announcementTitle}"
-      val url = new URL(downloadUrlOf(announcement))
-      val file = new File(s"./data/output/$filename.pdf")
+      val targetFile = new File(s"./data/output/$filename.pdf")
 
-      if (file.exists()) {
+      if (targetFile.exists()) {
         log.debug(s"Skip already downloaded $filename")
       } else {
         log.debug(s"Downloading announcement for $filename")
-        val transferred: Try[Long] = Try(download(url, file))
+        val transferred: Try[Long] = Try(download(downloadUrlOf(announcement), targetFile))
 
         transferred match {
-          case Success(length) => log.debug(s"Completed download of $filename")
-          case Failure(e) => log.error(e, s"Download failed announcement for $filename")
+          case Success(_) => log.debug(s"Completed download of $filename")
+          case Failure(_) => log.error(s"Download failed announcement for $filename")
         }
 
         sender() ! DownloadCompleted(stockNumber, announcement)
@@ -45,5 +44,5 @@ class Downloader extends Actor with ActorLogging {
     }
   }
 
-  def downloadUrlOf(announcement: Announcement): String = s"$prefix/${announcement.adjunctUrl}"
+  def downloadUrlOf(announcement: Announcement): URL = new URL(s"$prefix/${announcement.adjunctUrl}")
 }
