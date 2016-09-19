@@ -15,7 +15,7 @@ class Downloader extends Actor with ActorLogging {
   override def receive: Receive = {
     case Download(stockNumber, announcement) => {
       val filename = s"$stockNumber-${announcement.announcementTitle}"
-      val targetFile = new File(s"./data/output/$filename.pdf")
+      val targetFile = new File(s"./data/annual-announcements/$filename.pdf")
 
       if (targetFile.exists()) {
         log.debug(s"Skip already downloaded $filename")
@@ -25,11 +25,10 @@ class Downloader extends Actor with ActorLogging {
 
         transferred match {
           case Success(_) => log.debug(s"Completed download of $filename")
-          case Failure(_) => log.error(s"Download failed announcement for $filename")
+          case Failure(e) => log.error(s"Download failed announcement for $filename, ${e.getMessage}")
         }
-
-        sender() ! DownloadCompleted(stockNumber, announcement)
       }
+      sender() ! DownloadCompleted(stockNumber, announcement)
     }
   }
 

@@ -1,6 +1,6 @@
 package ren.nicholas.actor
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import com.google.common.io.Resources
 
 import scala.io.Source
@@ -13,25 +13,49 @@ class InputLoader extends Actor with ActorLogging {
       val lines: List[String] = Source.fromFile(Resources.getResource(inputFileName).toURI).getLines().drop(1).toList
       val stockNumbers: List[String] = lines.map(_.split(",")(1)).sorted
 
-      stockNumbers.foreach {
-        stockNumber => {
-          context.actorOf(Props[AnnouncementFinder]) ! Find(stockNumber)
-        }
+      for (stockNumber <- stockNumbers) {
+        finderFor(stockNumber) ! Find
       }
 
       context.become(ack(stockNumbers))
     }
   }
 
-  def ack(stockNumbers: List[String]): Receive = {
+  def finderFor(stockNumber: String): ActorRef = {
+    val props: Props = Props(classOf[AnnouncementFinder], stockNumber)
+    context.actorOf(props, finderNameFor(stockNumber))
+  }
+
+  def finderRefOf(stockNumber: String): ActorSelection = {
+    context.actorSelection(s"akka://extractor/user/input-loader/${finderNameFor(stockNumber)}")
+  }
+
+  def finderNameFor(stockNumber: String): String = {
+    s"finder-$stockNumber"
+  }
+
+  def ack(remains: List[String]): Receive = {
     case FindCompleted(stockNumber) => {
-      val remains: List[String] = stockNumbers.filterNot(_ == stockNumber)
-      if (remains.isEmpty) {
-        log.debug("[===============All Completed!!!===============]")
-        context.system.terminate();
-      } else {
-        context.become(ack(remains))
+      handleFindCompleted(remains, stockNumber)
+    }
+    case NoAnnouncement(stockNumber) => {
+//      log.info(s"=======no announcement found for $stockNumber")
+      handleFindCompleted(remains, stockNumber)
+    }
+    case Inspect => {
+      for (stockNumber <- remains) {
+        finderRefOf(stockNumber) ! Inspect
       }
+    }
+  }
+
+  def handleFindCompleted(stockNumbers: List[String], stockNumber: String): Unit = {
+    val remains: List[String] = stockNumbers.filterNot(_ == stockNumber)
+    if (remains.isEmpty) {
+      log.info("[===============All Completed!!!===============]")
+      context.system.terminate()
+    } else {
+      context.become(ack(remains))
     }
   }
 }

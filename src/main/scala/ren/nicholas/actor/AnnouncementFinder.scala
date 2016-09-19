@@ -11,24 +11,27 @@ import ren.nicholas.model.{Announcement, SearchResponse}
 
 import scala.io.Source
 
-class AnnouncementFinder extends Actor with ActorLogging {
+class AnnouncementFinder(val stockNumber: String) extends Actor with ActorLogging {
 
   implicit val formats = DefaultFormats
 
   val url = "http://www.cninfo.com.cn/cninfo-new/announcement/query"
 
   override def receive: Receive = {
-    case Find(stockNumber) => {
+    case Find => {
       log.debug(s"finding annual announcements for $stockNumber")
-      val announcements: List[Announcement] = announcementFor(stockNumber)
-      log.debug(s"found announcements for $stockNumber")
+      val announcements: List[Announcement] = fetchAnnouncements
 
-      fireDownloadFor(stockNumber, announcements)
-      context.become(ack(announcements.map(_.adjunctUrl)))
+      if (announcements.isEmpty) {
+        sender ! NoAnnouncement(stockNumber)
+      } else {
+        fireDownloadFor(announcements)
+        context.become(ack(announcements))
+      }
     }
   }
 
-  def announcementFor(stockNumber: String): List[Announcement] = {
+  def fetchAnnouncements: List[Announcement] = {
     val cacheFile = new File(s"./data/search-response/$stockNumber.json")
     if (cacheFile.exists()) {
       log.debug(s"load announcements from cache file for $stockNumber")
@@ -53,25 +56,38 @@ class AnnouncementFinder extends Actor with ActorLogging {
     parse(string).extract[List[Announcement]]
   }
 
-  def fireDownloadFor(stockNumber: String, announcements: List[Announcement]): Unit = {
+  def fireDownloadFor(announcements: List[Announcement]): Unit = {
     announcements.foreach {
       announcement => {
-        val year: String = announcement.yearOfPublished
-        val downloader: ActorRef = context.actorOf(Props[Downloader], s"$stockNumber-$year-downloader")
+        val year: Option[String] = announcement.yearOfPublished
+        if (year.isEmpty) {
+          log.warning(s"Can not find year of published for ${announcement.announcementTitle}")
+        }
+        val downloader: ActorRef = context.actorOf(Props[Downloader], downloaderNameFor(stockNumber, year, announcement.announcementId))
         downloader ! Download(stockNumber, announcement)
       }
     }
   }
 
-  def ack(uris: List[String]): Receive = {
-    case DownloadCompleted(stockNumber, announcement) => {
-      val remains: List[String] = uris.filterNot(_ == announcement.adjunctUrl)
+  def downloaderNameFor(stockNumber: String, year: Option[String], announcementId: String): String = {
+    s"$stockNumber-${year.getOrElse("unknow")}-$announcementId-downloader"
+  }
+
+  def ack(announcements: List[Announcement]): Receive = {
+    case DownloadCompleted(stock, announcement) => {
+      val remains: List[Announcement] = announcements.filterNot(_ == announcement)
       if (remains.isEmpty) {
-        log.debug(s"Download completed for $stockNumber")
-        inputLoader ! FindCompleted(stockNumber)
+        log.info(s"Download completed for $stock")
+        inputLoader ! FindCompleted(stock)
       } else {
         context.become(ack(remains))
       }
+    }
+    case Inspect => {
+      if (announcements.isEmpty) {
+        sender() ! FindCompleted(stockNumber)
+      }
+      log.info(s"Remained ${announcements.map(_.announcementTime)}")
     }
   }
 

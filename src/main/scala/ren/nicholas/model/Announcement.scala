@@ -24,7 +24,9 @@ case class Announcement(id: Option[String],
 
   val titlePattern = ".*(\\d{4}).*".r
 
-  def yearOfPublished: String = titlePattern.findFirstMatchIn(announcementTitle).get.group(1)
+  def yearOfPublished: Option[String] = {
+    titlePattern.findFirstMatchIn(announcementTitle).map(_.group(1))
+  }
 
 }
 
