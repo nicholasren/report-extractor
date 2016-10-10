@@ -39,7 +39,7 @@ class InputLoader extends Actor with ActorLogging {
       handleFindCompleted(remains, stockNumber)
     }
     case NoAnnouncement(stockNumber) => {
-//      log.info(s"=======no announcement found for $stockNumber")
+      log.info(s"=======no announcement found for $stockNumber")
       handleFindCompleted(remains, stockNumber)
     }
     case Inspect => {

@@ -18,7 +18,7 @@ libraryDependencies += "org.json4s" %% "json4s-native" % "3.4.0"
 
 libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.4.0"
 
-//libraryDependencies += "org.apache.pdfbox" %% "pdfbox" % "2.0.0"
+libraryDependencies += "net.java.truecommons" % "truecommons-shed" % "2.5.0"
 
 libraryDependencies += "org.apache.pdfbox" % "pdfbox" % "2.0.2"
 

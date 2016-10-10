@@ -13,7 +13,6 @@ class JsonParseSpec extends WordSpecLike with Matchers {
       val string: JsonInput = asString("announcement.json")
 
       val announcement = parse(string).extract[Announcement]
-      println(announcement)
 
       announcement should !==(None)
     }

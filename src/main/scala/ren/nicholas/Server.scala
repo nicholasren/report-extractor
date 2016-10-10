@@ -1,5 +1,6 @@
 package ren.nicholas
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem, Props}

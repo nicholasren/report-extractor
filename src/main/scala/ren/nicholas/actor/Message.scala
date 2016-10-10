@@ -20,8 +20,12 @@ case class Strip(file: File) extends Message
 case class StripCompleted(file: File) extends Message
 case class NotMatchedFor(file: File) extends Message
 
+
+
 case object Strip extends Message
 
 case object Start
 
 case object Inspect
+
+case class Extract(file: File) extends Message

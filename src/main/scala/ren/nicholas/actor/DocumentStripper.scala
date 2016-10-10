@@ -3,7 +3,8 @@ package ren.nicholas.actor
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, PoisonPill}
-import org.apache.pdfbox.pdmodel.PDDocument
+import net.java.truecommons.shed.ResourceLoan._
+import org.apache.pdfbox.pdmodel.{PDDocument, PDPage}
 import org.apache.pdfbox.text.PDFTextStripper
 
 import scala.util.{Failure, Success, Try}
@@ -13,46 +14,51 @@ class DocumentStripper extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case Strip(file) => {
-      val triedDocument: Try[PDDocument] = tryOf(PDDocument.load(file))
-
-      triedDocument match {
-        case Success(in) => {
-          strip(file, in) match {
-            case Some(f) => sender ! StripCompleted(file)
-            case None => sender ! NotMatchedFor(file)
-          }
-
-        }
-        case Failure(e) => {
-          log.error(s"Strip failed for ${file.getName}, ${e}")
-          sender ! StripCompleted(file)
+      val target: File = targetFileFor(file)
+      if (!target.exists()) {
+        tryOf(PDDocument.load(file)) match {
+          case Success(document) =>
+            strip(document, target) match {
+              case Some(f) => sender ! StripCompleted(file)
+              case None => sender ! NotMatchedFor(file)
+            }
+          case Failure(e) =>
+            log.error(s"Strip failed for ${file.getName}, ${e}")
+            sender ! StripCompleted(file)
         }
       }
-
       self ! PoisonPill
     }
   }
 
-  def strip(file: File, in: PDDocument): Option[File] = {
-    val matchedPages: Set[Int] = (1 to in.getNumberOfPages)
+  def strip(document: PDDocument, target: File): Option[File] = {
+
+    loan(document).to {
+      in => {
+        val matchedPages: Set[PDPage] = findContainedPages(in)
+        if (matchedPages.isEmpty) {
+          None
+        } else {
+          loan(new PDDocument()).to {
+            out => {
+              matchedPages.foreach(out.importPage)
+              out.save(target)
+            }
+          }
+          Some(target)
+        }
+      }
+    }
+  }
+
+
+  def findContainedPages(in: PDDocument): Set[PDPage] = {
+    (1 to in.getNumberOfPages)
       .filter(matchedIn(in))
       .flatMap(adjacent)
       .toSet
+      .map { p: Int => in.getPage(p - 1)}
 
-    if (matchedPages.isEmpty) {
-      None
-    } else {
-      val out: PDDocument = new PDDocument()
-      val target: File = targetFileFor(file)
-      matchedPages.foreach(i => out.importPage(in.getPage(i - 1)))
-
-      out.save(target)
-
-      in.close()
-      out.close()
-
-      Some(target)
-    }
   }
 
   def targetFileFor(file: File): File = {
