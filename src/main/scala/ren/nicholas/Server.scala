@@ -1,6 +1,5 @@
 package ren.nicholas
 
-import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem, Props}
@@ -11,11 +10,11 @@ object Server extends App {
 
   val system = ActorSystem("extractor")
 
-//  val loader: ActorRef = system.actorOf(Props[InputLoader], "input-loader")
-//
-//  loader ! Start
+  val loader: ActorRef = system.actorOf(Props[InputLoader], "input-loader")
 
   val extractor: ActorRef = system.actorOf(Props[DocumentStripperSupervisor], "extractor")
 
-  extractor ! Strip
+  //  loader ! Start
+
+  //  extractor ! Strip
 }

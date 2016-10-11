@@ -24,6 +24,11 @@ libraryDependencies += "org.apache.pdfbox" % "pdfbox" % "2.0.2"
 
 libraryDependencies += "org.bouncycastle" % "bcprov-jdk15on" % "1.55"
 
+libraryDependencies += "org.apache.poi" % "poi" % "3.15"
+
+libraryDependencies += "org.apache.poi" % "poi-ooxml" % "3.15"
+
+
 
 
 
