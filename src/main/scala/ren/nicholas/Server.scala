@@ -16,5 +16,5 @@ object Server extends App {
 
   //  loader ! Start
 
-  //  extractor ! Strip
+    extractor ! DocumentStripper.Strip
 }

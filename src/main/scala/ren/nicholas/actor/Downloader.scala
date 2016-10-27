@@ -9,11 +9,19 @@ import ren.nicholas.model.Announcement
 
 import scala.util.{Failure, Success, Try}
 
+object Downloader {
+
+  case class Download(stockNumber: String, announcement: Announcement)
+
+  case class DownloadCompleted(stockNumber: String, announcement: Announcement)
+
+}
+
 class Downloader extends Actor with ActorLogging {
   val prefix = "http://www.cninfo.com.cn"
 
   override def receive: Receive = {
-    case Download(stockNumber, announcement) => {
+    case Downloader.Download(stockNumber, announcement) => {
       val filename = s"$stockNumber-${announcement.announcementTitle}"
       val targetFile = new File(s"./data/annual-announcements/$filename.pdf")
 
@@ -28,7 +36,7 @@ class Downloader extends Actor with ActorLogging {
           case Failure(e) => log.error(s"Download failed announcement for $filename, ${e.getMessage}")
         }
       }
-      sender() ! DownloadCompleted(stockNumber, announcement)
+      sender() ! Downloader.DownloadCompleted(stockNumber, announcement)
     }
   }
 

@@ -2,14 +2,24 @@ package ren.nicholas.actor
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import com.google.common.io.Resources
+import ren.nicholas.actor.AnnouncementFinder.{Find, FindCompleted, NoAnnouncement}
 
 import scala.io.Source
+
+object InputLoader {
+
+  case object Start
+
+  case object Inspect
+
+}
+
 
 class InputLoader extends Actor with ActorLogging {
   val inputFileName: String = "trd_co.csv"
 
   override def receive: Receive = {
-    case Start => {
+    case InputLoader.Start => {
       val lines: List[String] = Source.fromFile(Resources.getResource(inputFileName).toURI).getLines().drop(1).toList
       val stockNumbers: List[String] = lines.map(_.split(",")(1)).sorted
 
@@ -42,9 +52,9 @@ class InputLoader extends Actor with ActorLogging {
       log.info(s"=======no announcement found for $stockNumber")
       handleFindCompleted(remains, stockNumber)
     }
-    case Inspect => {
+    case InputLoader.Inspect => {
       for (stockNumber <- remains) {
-        finderRefOf(stockNumber) ! Inspect
+        finderRefOf(stockNumber) ! InputLoader.Inspect
       }
     }
   }

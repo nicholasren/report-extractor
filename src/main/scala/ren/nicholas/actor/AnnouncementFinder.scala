@@ -7,9 +7,20 @@ import org.apache.http.client.fluent.{Form, Request}
 import org.json4s.jackson.Serialization.write
 import org.json4s.native.JsonMethods._
 import org.json4s.{DefaultFormats, _}
+import ren.nicholas.actor.InputLoader.Inspect
 import ren.nicholas.model.{Announcement, SearchResponse}
 
 import scala.io.Source
+
+object AnnouncementFinder {
+
+  case object Find
+
+  case class NoAnnouncement(stockNumber: String)
+
+  case class FindCompleted(stockNumber: String)
+
+}
 
 class AnnouncementFinder(val stockNumber: String) extends Actor with ActorLogging {
 
@@ -18,12 +29,12 @@ class AnnouncementFinder(val stockNumber: String) extends Actor with ActorLoggin
   val url = "http://www.cninfo.com.cn/cninfo-new/announcement/query"
 
   override def receive: Receive = {
-    case Find => {
+    case AnnouncementFinder.Find => {
       log.debug(s"finding annual announcements for $stockNumber")
       val announcements: List[Announcement] = fetchAnnouncements
 
       if (announcements.isEmpty) {
-        sender ! NoAnnouncement(stockNumber)
+        sender ! AnnouncementFinder.NoAnnouncement(stockNumber)
       } else {
         fireDownloadFor(announcements)
         context.become(ack(announcements))
@@ -64,7 +75,7 @@ class AnnouncementFinder(val stockNumber: String) extends Actor with ActorLoggin
           log.warning(s"Can not find year of published for ${announcement.announcementTitle}")
         }
         val downloader: ActorRef = context.actorOf(Props[Downloader], downloaderNameFor(stockNumber, year, announcement.announcementId))
-        downloader ! Download(stockNumber, announcement)
+        downloader ! Downloader.Download(stockNumber, announcement)
       }
     }
   }
@@ -74,18 +85,18 @@ class AnnouncementFinder(val stockNumber: String) extends Actor with ActorLoggin
   }
 
   def ack(announcements: List[Announcement]): Receive = {
-    case DownloadCompleted(stock, announcement) => {
+    case Downloader.DownloadCompleted(stock, announcement) => {
       val remains: List[Announcement] = announcements.filterNot(_ == announcement)
       if (remains.isEmpty) {
         log.info(s"Download completed for $stock")
-        inputLoader ! FindCompleted(stock)
+        inputLoader ! AnnouncementFinder.FindCompleted(stock)
       } else {
         context.become(ack(remains))
       }
     }
     case Inspect => {
       if (announcements.isEmpty) {
-        sender() ! FindCompleted(stockNumber)
+        sender() ! AnnouncementFinder.FindCompleted(stockNumber)
       }
       log.info(s"Remained ${announcements.map(_.announcementTime)}")
     }
